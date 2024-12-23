@@ -1,4 +1,5 @@
 import { QRCodeSVG } from "qrcode.react";
+import { PlayersList } from "./PlayersList";
 
 interface WaitingStateProps {
   playerName: string;
@@ -50,18 +51,7 @@ export function WaitingState({
         />
       </div>
 
-      <div style={{ margin: "20px 0" }}>
-        <h3>Players in game:</h3>
-        <ul style={{ listStyle: "none", padding: 0 }}>
-          {Object.entries(players).map(([id, player]) => (
-            <li key={id}>
-              <span>
-                {player.name}: {player.score}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </div>
+      <PlayersList players={players} />
 
       {showQR && (
         <div style={{ marginTop: "20px" }}>

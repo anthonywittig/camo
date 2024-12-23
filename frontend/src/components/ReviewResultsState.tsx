@@ -1,8 +1,12 @@
+import { PlayersList } from "./PlayersList";
+import { WordsList } from "./WordsList";
+
 interface ReviewResultsStateProps {
   players: Record<string, { name: string; score: number }>;
   susPlayer?: string;
   votes?: Record<string, string>;
   handleNextRound: () => void;
+  words?: string[];
 }
 
 export function ReviewResultsState({
@@ -10,6 +14,7 @@ export function ReviewResultsState({
   susPlayer,
   votes,
   handleNextRound,
+  words,
 }: ReviewResultsStateProps) {
   return (
     <div
@@ -24,6 +29,9 @@ export function ReviewResultsState({
       <p style={{ color: "#646cff" }}>
         The sus player was: {players[susPlayer || ""].name}
       </p>
+
+      <PlayersList players={players} title="Final Scores:" />
+
       <h4>Votes:</h4>
       <ul style={{ listStyle: "none", padding: 0 }}>
         {Object.entries(votes || {}).map(([voterId, votedForId]) => (
@@ -32,6 +40,9 @@ export function ReviewResultsState({
           </li>
         ))}
       </ul>
+
+      {words && <WordsList words={words} />}
+
       <button
         onClick={handleNextRound}
         style={{

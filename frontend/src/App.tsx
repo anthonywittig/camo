@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from "react";
-import { QRCodeSVG } from "qrcode.react";
 import { v4 as uuidv4 } from "uuid";
 import { WaitingState } from "./components/WaitingState";
 import { RoundStartedState } from "./components/RoundStartedState";
@@ -31,8 +30,6 @@ function App() {
   const [playerId] = useState(() => uuidv4());
   const [game, setGame] = useState<Game>({ players: {}, gameState: "waiting" });
   const wsRef = useRef<WebSocket | null>(null);
-  const [countdown, setCountdown] = useState<number | null>(null);
-  const [showSecretWord, setShowSecretWord] = useState(false);
 
   const isGameRoute = window.location.pathname.length > 1;
   const gameId = isGameRoute ? window.location.pathname.slice(1) : "";
@@ -72,31 +69,12 @@ function App() {
           } else if (data.type === "round_start") {
             setGame((prevGame) => ({
               ...prevGame,
+              gameState: data.gameState,
               words: data.words,
               secretWord: data.secretWord,
               susPlayer: data.susPlayer,
               votes: {}, // Reset votes at the start of a new round
             }));
-            // Start countdown for all players
-            setCountdown(5);
-            const timer = setInterval(() => {
-              setCountdown((prev) => {
-                if (prev === null) return null;
-                if (prev <= 1) {
-                  clearInterval(timer);
-                  setShowSecretWord(true);
-                  setTimeout(() => {
-                    setShowSecretWord(false);
-                    setGame((prevGame) => ({
-                      ...prevGame,
-                      gameState: "voting",
-                    }));
-                  }, 3000);
-                  return null;
-                }
-                return prev - 1;
-              });
-            }, 1000);
           }
         } catch (error) {
           console.error("Error parsing WebSocket message:", error);
@@ -194,15 +172,38 @@ function App() {
           />
         )}
 
+        {game.gameState === "ready" && (
+          <div>
+            <h2>Get Ready!</h2>
+            <p>The game is about to begin...</p>
+            <p>All players have joined and we're preparing the first round.</p>
+            <div className="players-list">
+              <h3>Players:</h3>
+              {Object.entries(game.players).map(([id, player]) => (
+                <div key={id}>
+                  {player.name} - Score: {player.score}
+                </div>
+              ))}
+            </div>
+            <button onClick={handleNextRound} style={{ marginTop: "20px" }}>
+              Start Round
+            </button>
+          </div>
+        )}
+
         {game.gameState === "round_started" && (
           <RoundStartedState
-            countdown={countdown}
-            showSecretWord={showSecretWord}
             secretWord={game.secretWord}
             susPlayer={game.susPlayer}
             playerId={playerId}
             words={game.words}
             players={game.players}
+            onTransitionToVoting={() =>
+              setGame((prevGame) => ({
+                ...prevGame,
+                gameState: "voting",
+              }))
+            }
           />
         )}
 
@@ -212,6 +213,7 @@ function App() {
             playerId={playerId}
             votes={game.votes}
             handleVote={handleVote}
+            words={game.words}
           />
         )}
 
@@ -221,6 +223,7 @@ function App() {
             susPlayer={game.susPlayer}
             votes={game.votes}
             handleNextRound={handleNextRound}
+            words={game.words}
           />
         )}
       </div>
@@ -235,16 +238,6 @@ function App() {
       <button onClick={createNewGame} style={{ marginBottom: "20px" }}>
         Create New Game
       </button>
-
-      <button onClick={toggleQR}>
-        {showQR ? "Hide QR Code" : "Show QR Code"}
-      </button>
-
-      {showQR && (
-        <div style={{ marginTop: "20px" }}>
-          <QRCodeSVG value={window.location.href} size={256} level="H" />
-        </div>
-      )}
     </div>
   );
 }

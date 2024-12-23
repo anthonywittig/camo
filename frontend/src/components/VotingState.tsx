@@ -1,8 +1,11 @@
+import { WordsList } from "./WordsList";
+
 interface VotingStateProps {
   players: Record<string, { name: string; score: number }>;
   playerId: string;
   votes?: Record<string, string>;
   handleVote: (votedForId: string) => void;
+  words?: string[];
 }
 
 export function VotingState({
@@ -10,6 +13,7 @@ export function VotingState({
   playerId,
   votes,
   handleVote,
+  words,
 }: VotingStateProps) {
   return (
     <div style={{ margin: "20px 0" }}>
@@ -39,6 +43,7 @@ export function VotingState({
           </li>
         ))}
       </ul>
+      {words && <WordsList words={words} />}
     </div>
   );
 }

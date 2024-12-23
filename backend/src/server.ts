@@ -156,9 +156,11 @@ app.post("/api/games/:gameId/next-round", (req: Request, res: Response) => {
       if (client.readyState === WebSocket.OPEN) {
         const message = JSON.stringify({
           type: "round_start",
+          gameState: games[gameId].gameState,
           words: words,
           secretWord: games[gameId].secretWord,
           susPlayer: games[gameId].susPlayer,
+          players: games[gameId].players,
         });
         client.send(message);
       }
