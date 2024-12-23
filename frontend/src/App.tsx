@@ -6,11 +6,19 @@ interface ApiResponse {
   message: string;
 }
 
+interface Game {
+  players: Record<string, { name: string }>;
+}
+
 function App() {
   const [message, setMessage] = useState<string>("");
   const [showQR, setShowQR] = useState(false);
   const [playerName, setPlayerName] = useState("");
+  const [playerId] = useState(() => uuidv4());
+  const [game, setGame] = useState<Game>({ players: {} });
+
   const isGameRoute = window.location.pathname.length > 1;
+  const gameId = isGameRoute ? window.location.pathname.slice(1) : "";
 
   useEffect(() => {
     fetch("/api/test")
@@ -18,6 +26,31 @@ function App() {
       .then((data: ApiResponse) => setMessage(data.message))
       .catch((error) => console.error("Error:", error));
   }, []);
+
+  useEffect(() => {
+    if (isGameRoute) {
+      const interval = setInterval(() => {
+        fetch(`/api/games/${gameId}`)
+          .then((response) => response.json())
+          .then((data: Game) => setGame(data))
+          .catch((error) => console.error("Error:", error));
+      }, 1000);
+
+      return () => clearInterval(interval);
+    }
+  }, [gameId, isGameRoute]);
+
+  useEffect(() => {
+    if (isGameRoute && playerName) {
+      fetch(`/api/games/${gameId}/players`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ playerId, name: playerName }),
+      }).catch((error) => console.error("Error:", error));
+    }
+  }, [gameId, playerId, playerName, isGameRoute]);
 
   const toggleQR = () => {
     setShowQR(!showQR);
@@ -64,6 +97,15 @@ function App() {
               fontFamily: "inherit",
             }}
           />
+        </div>
+
+        <div style={{ margin: "20px 0" }}>
+          <h3>Players in game:</h3>
+          <ul style={{ listStyle: "none", padding: 0 }}>
+            {Object.values(game.players).map((player, index) => (
+              <li key={index}>{player.name}</li>
+            ))}
+          </ul>
         </div>
 
         {showQR && (
