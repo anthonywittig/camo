@@ -13,6 +13,7 @@ interface Game {
   players: Record<string, Player>;
   gameState: "waiting" | "in-progress";
   secretWord?: string;
+  susPlayer?: string;
 }
 
 const games: Record<string, Game> = {};
@@ -133,21 +134,31 @@ app.post("/api/games/:gameId/next-round", (req: Request, res: Response) => {
   const randomIndex = Math.floor(Math.random() * words.length);
   games[gameId].secretWord = words[randomIndex];
 
+  // Randomly select a sus player from the list of players
+  const playerIds = Object.keys(games[gameId].players);
+  const randomPlayerIndex = Math.floor(Math.random() * playerIds.length);
+  games[gameId].susPlayer = playerIds[randomPlayerIndex];
+
   // Send the countdown start and words update to all connected clients
   if (gameConnections[gameId]) {
-    const message = JSON.stringify({
-      type: "round_start",
-      words: words,
-      secretWord: games[gameId].secretWord,
-    });
     gameConnections[gameId].forEach((client) => {
       if (client.readyState === WebSocket.OPEN) {
+        const message = JSON.stringify({
+          type: "round_start",
+          words: words,
+          secretWord: games[gameId].secretWord,
+          susPlayer: games[gameId].susPlayer,
+        });
         client.send(message);
       }
     });
   }
 
-  res.json({ words, secretWord: games[gameId].secretWord });
+  res.json({
+    words,
+    secretWord: games[gameId].secretWord,
+    susPlayer: games[gameId].susPlayer,
+  });
 });
 
 app.get("*", (req, res) => {

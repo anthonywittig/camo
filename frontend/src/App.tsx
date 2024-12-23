@@ -11,6 +11,7 @@ interface Game {
   gameState: "waiting" | "in-progress";
   words?: string[];
   secretWord?: string;
+  susPlayer?: string;
 }
 
 function App() {
@@ -58,6 +59,7 @@ function App() {
               ...prevGame,
               words: data.words,
               secretWord: data.secretWord,
+              susPlayer: data.susPlayer,
             }));
             // Start countdown for all players
             setCountdown(5);
@@ -195,7 +197,7 @@ function App() {
                   {countdown}
                 </div>
               )}
-              {showSecretWord && game.secretWord && (
+              {showSecretWord && (
                 <div
                   style={{
                     fontSize: "24px",
@@ -203,7 +205,9 @@ function App() {
                     color: "#646cff",
                   }}
                 >
-                  Secret Word: {game.secretWord}
+                  {game.susPlayer === playerId
+                    ? "you sus"
+                    : `Secret Word: ${game.secretWord}`}
                 </div>
               )}
             </div>
