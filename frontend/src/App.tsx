@@ -7,7 +7,7 @@ interface ApiResponse {
 }
 
 interface Game {
-  players: Record<string, { name: string }>;
+  players: Record<string, { name: string; score: number }>;
   gameState: "waiting" | "in-progress";
   words?: string[];
   secretWord?: string;
@@ -181,7 +181,9 @@ function App() {
           <h3>Players in game:</h3>
           <ul style={{ listStyle: "none", padding: 0 }}>
             {Object.values(game.players).map((player, index) => (
-              <li key={index}>{player.name}</li>
+              <li key={index}>
+                {player.name}: {player.score}
+              </li>
             ))}
           </ul>
           {game.gameState === "in-progress" && (
@@ -205,9 +207,7 @@ function App() {
                     color: "#646cff",
                   }}
                 >
-                  {game.susPlayer === playerId
-                    ? "you sus"
-                    : `Secret Word: ${game.secretWord}`}
+                  {game.susPlayer === playerId ? "you sus" : game.secretWord}
                 </div>
               )}
             </div>

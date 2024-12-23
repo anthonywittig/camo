@@ -7,6 +7,7 @@ import { v4 as uuidv4 } from "uuid";
 
 interface Player {
   name: string;
+  score: number;
 }
 
 interface Game {
@@ -78,7 +79,7 @@ app.post("/api/games/:gameId/players", (req: Request, res: Response) => {
     games[gameId] = { players: {}, gameState: "waiting" };
   }
 
-  games[gameId].players[playerId] = { name };
+  games[gameId].players[playerId] = { name, score: 0 };
 
   // Broadcast to all clients in this game
   if (gameConnections[gameId]) {
