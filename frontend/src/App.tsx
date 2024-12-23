@@ -10,6 +10,7 @@ interface Game {
   players: Record<string, { name: string }>;
   gameState: "waiting" | "in-progress";
   words?: string[];
+  secretWord?: string;
 }
 
 function App() {
@@ -19,6 +20,8 @@ function App() {
   const [playerId] = useState(() => uuidv4());
   const [game, setGame] = useState<Game>({ players: {}, gameState: "waiting" });
   const wsRef = useRef<WebSocket | null>(null);
+  const [countdown, setCountdown] = useState<number | null>(null);
+  const [showSecretWord, setShowSecretWord] = useState(false);
 
   const isGameRoute = window.location.pathname.length > 1;
   const gameId = isGameRoute ? window.location.pathname.slice(1) : "";
@@ -51,7 +54,11 @@ function App() {
           } else if (data.type === "game_state_update") {
             setGame((prevGame) => ({ ...prevGame, gameState: data.gameState }));
           } else if (data.type === "words_update") {
-            setGame((prevGame) => ({ ...prevGame, words: data.words }));
+            setGame((prevGame) => ({
+              ...prevGame,
+              words: data.words,
+              secretWord: data.secretWord,
+            }));
           }
         } catch (error) {
           console.error("Error parsing WebSocket message:", error);
@@ -100,6 +107,34 @@ function App() {
         "Content-Type": "application/json",
       },
     }).catch((error) => console.error("Error:", error));
+  };
+
+  const handleNextRound = () => {
+    fetch(`/api/games/${gameId}/next-round`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+      .then(() => {
+        setCountdown(5);
+        const timer = setInterval(() => {
+          setCountdown((prev) => {
+            if (prev === null) return null;
+            if (prev <= 1) {
+              clearInterval(timer);
+              setShowSecretWord(true);
+              // Hide secret word after 3 seconds
+              setTimeout(() => {
+                setShowSecretWord(false);
+              }, 3000);
+              return null;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+      })
+      .catch((error) => console.error("Error:", error));
   };
 
   if (isGameRoute) {
@@ -151,19 +186,30 @@ function App() {
             ))}
           </ul>
           {game.gameState === "in-progress" && (
-            <button
-              onClick={() => {
-                fetch(`/api/games/${gameId}/next-round`, {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                  },
-                }).catch((error) => console.error("Error:", error));
-              }}
-              style={{ marginTop: "20px" }}
-            >
-              Next Round
-            </button>
+            <div style={{ marginTop: "20px" }}>
+              <button
+                onClick={handleNextRound}
+                style={{ marginBottom: "10px" }}
+              >
+                Next Round
+              </button>
+              {countdown !== null && (
+                <div style={{ fontSize: "24px", margin: "10px 0" }}>
+                  {countdown}
+                </div>
+              )}
+              {showSecretWord && game.secretWord && (
+                <div
+                  style={{
+                    fontSize: "24px",
+                    margin: "10px 0",
+                    color: "#646cff",
+                  }}
+                >
+                  Secret Word: {game.secretWord}
+                </div>
+              )}
+            </div>
           )}
         </div>
 

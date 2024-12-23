@@ -12,6 +12,7 @@ interface Player {
 interface Game {
   players: Record<string, Player>;
   gameState: "waiting" | "in-progress";
+  secretWord?: string;
 }
 
 const games: Record<string, Game> = {};
@@ -129,12 +130,15 @@ app.post("/api/games/:gameId/next-round", (req: Request, res: Response) => {
   }
 
   const words = ["apple", "salsa", "pop", uuidv4()];
+  const randomIndex = Math.floor(Math.random() * words.length);
+  games[gameId].secretWord = words[randomIndex];
 
   // Send the words update to all connected clients
   if (gameConnections[gameId]) {
     const message = JSON.stringify({
       type: "words_update",
       words: words,
+      secretWord: games[gameId].secretWord,
     });
     gameConnections[gameId].forEach((client) => {
       if (client.readyState === WebSocket.OPEN) {
@@ -143,7 +147,7 @@ app.post("/api/games/:gameId/next-round", (req: Request, res: Response) => {
     });
   }
 
-  res.json({ words });
+  res.json({ words, secretWord: games[gameId].secretWord });
 });
 
 app.get("*", (req, res) => {
