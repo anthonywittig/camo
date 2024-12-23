@@ -8,6 +8,7 @@ interface ApiResponse {
 
 interface Game {
   players: Record<string, { name: string }>;
+  gameState: "waiting" | "in-progress";
 }
 
 function App() {
@@ -15,7 +16,7 @@ function App() {
   const [showQR, setShowQR] = useState(false);
   const [playerName, setPlayerName] = useState("");
   const [playerId] = useState(() => uuidv4());
-  const [game, setGame] = useState<Game>({ players: {} });
+  const [game, setGame] = useState<Game>({ players: {}, gameState: "waiting" });
   const wsRef = useRef<WebSocket | null>(null);
 
   const isGameRoute = window.location.pathname.length > 1;
@@ -46,6 +47,8 @@ function App() {
           const data = JSON.parse(event.data);
           if (data.type === "players_update") {
             setGame((prevGame) => ({ ...prevGame, players: data.players }));
+          } else if (data.type === "game_state_update") {
+            setGame((prevGame) => ({ ...prevGame, gameState: data.gameState }));
           }
         } catch (error) {
           console.error("Error parsing WebSocket message:", error);
@@ -87,6 +90,15 @@ function App() {
     window.location.href = "/";
   };
 
+  const startGame = () => {
+    fetch(`/api/games/${gameId}/start`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }).catch((error) => console.error("Error:", error));
+  };
+
   if (isGameRoute) {
     return (
       <div className="App">
@@ -99,26 +111,33 @@ function App() {
           }}
         >
           <button onClick={goBack}>Back</button>
-          <button onClick={toggleQR}>
-            {showQR ? "Hide QR Code" : "Show QR Code"}
-          </button>
+          {game.gameState === "waiting" && (
+            <>
+              <button onClick={toggleQR}>
+                {showQR ? "Hide QR Code" : "Show QR Code"}
+              </button>
+              <button onClick={startGame}>Start Game</button>
+            </>
+          )}
         </div>
 
         <div style={{ margin: "20px 0" }}>
-          <input
-            type="text"
-            value={playerName}
-            onChange={(e) => setPlayerName(e.target.value)}
-            placeholder="Enter your name"
-            style={{
-              padding: "0.6em 1.2em",
-              borderRadius: "8px",
-              border: "1px solid #646cff",
-              backgroundColor: "transparent",
-              fontSize: "1em",
-              fontFamily: "inherit",
-            }}
-          />
+          {game.gameState === "waiting" && (
+            <input
+              type="text"
+              value={playerName}
+              onChange={(e) => setPlayerName(e.target.value)}
+              placeholder="Enter your name"
+              style={{
+                padding: "0.6em 1.2em",
+                borderRadius: "8px",
+                border: "1px solid #646cff",
+                backgroundColor: "transparent",
+                fontSize: "1em",
+                fontFamily: "inherit",
+              }}
+            />
+          )}
         </div>
 
         <div style={{ margin: "20px 0" }}>

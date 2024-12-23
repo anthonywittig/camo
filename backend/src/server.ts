@@ -10,6 +10,7 @@ interface Player {
 
 interface Game {
   players: Record<string, Player>;
+  gameState: "waiting" | "in-progress";
 }
 
 const games: Record<string, Game> = {};
@@ -71,7 +72,7 @@ app.post("/api/games/:gameId/players", (req: Request, res: Response) => {
   const { playerId, name } = req.body;
 
   if (!games[gameId]) {
-    games[gameId] = { players: {} };
+    games[gameId] = { players: {}, gameState: "waiting" };
   }
 
   games[gameId].players[playerId] = { name };
@@ -95,6 +96,28 @@ app.post("/api/games/:gameId/players", (req: Request, res: Response) => {
 app.get("/api/games/:gameId", (req: Request, res: Response) => {
   const { gameId } = req.params;
   res.json(games[gameId] || { players: {} });
+});
+
+app.post("/api/games/:gameId/start", (req: Request, res: Response) => {
+  const { gameId } = req.params;
+  if (!games[gameId]) {
+    res.status(404).json({ error: "Game not found" });
+    return;
+  }
+  games[gameId].gameState = "in-progress";
+
+  if (gameConnections[gameId]) {
+    const message = JSON.stringify({
+      type: "game_state_update",
+      gameState: games[gameId].gameState,
+    });
+    gameConnections[gameId].forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(message);
+      }
+    });
+  }
+  res.json(games[gameId]);
 });
 
 app.get("*", (req, res) => {
