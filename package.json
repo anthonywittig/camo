@@ -7,7 +7,7 @@
     "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install",
     "docker:clean": "docker rm -f camo || true",
     "docker:build": "npm run docker:clean && docker build -t camo ./backend",
-    "docker:run": "docker run --name camo -p 0.0.0.0:5001:5001 camo",
+    "docker:run": "docker run --name camo -p 0.0.0.0:5001:5001 -p 0.0.0.0:5002:5002 camo",
     "docker:start": "npm run docker:build && npm run docker:run"
   },
   "devDependencies": {

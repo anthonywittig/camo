@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { v4 as uuidv4 } from "uuid";
 
@@ -16,9 +16,12 @@ function App() {
   const [playerName, setPlayerName] = useState("");
   const [playerId] = useState(() => uuidv4());
   const [game, setGame] = useState<Game>({ players: {} });
+  const wsRef = useRef<WebSocket | null>(null);
 
   const isGameRoute = window.location.pathname.length > 1;
   const gameId = isGameRoute ? window.location.pathname.slice(1) : "";
+
+  const wsUrl = `ws://${window.location.hostname}:5002`;
 
   useEffect(() => {
     fetch("/api/test")
@@ -29,14 +32,33 @@ function App() {
 
   useEffect(() => {
     if (isGameRoute) {
-      const interval = setInterval(() => {
-        fetch(`/api/games/${gameId}`)
-          .then((response) => response.json())
-          .then((data: Game) => setGame(data))
-          .catch((error) => console.error("Error:", error));
-      }, 1000);
+      // Connect to WebSocket
+      const ws = new WebSocket(wsUrl);
+      wsRef.current = ws;
 
-      return () => clearInterval(interval);
+      ws.onopen = () => {
+        // Join the specific game room
+        ws.send(JSON.stringify({ type: "join", gameId }));
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === "players_update") {
+            setGame((prevGame) => ({ ...prevGame, players: data.players }));
+          }
+        } catch (error) {
+          console.error("Error parsing WebSocket message:", error);
+        }
+      };
+
+      ws.onerror = (error) => {
+        console.error("WebSocket error:", error);
+      };
+
+      return () => {
+        ws.close();
+      };
     }
   }, [gameId, isGameRoute]);
 

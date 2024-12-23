@@ -2,6 +2,7 @@ import express, { Express, Request, Response } from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import path from "path";
+import { WebSocket, WebSocketServer } from "ws";
 
 interface Player {
   name: string;
@@ -22,6 +23,45 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "../public")));
 
+// Add after your Express app initialization
+const wss = new WebSocketServer({ port: 5002 });
+
+// Store WebSocket connections by gameId
+const gameConnections: Record<string, WebSocket[]> = {};
+
+wss.on("connection", (ws: WebSocket) => {
+  let clientGameId: string;
+
+  ws.on("message", (message: string) => {
+    const data = JSON.parse(message);
+    if (data.type === "join") {
+      clientGameId = data.gameId;
+      if (!gameConnections[clientGameId]) {
+        gameConnections[clientGameId] = [];
+      }
+      gameConnections[clientGameId].push(ws);
+
+      // Send current players list to the newly connected client
+      if (games[clientGameId]) {
+        ws.send(
+          JSON.stringify({
+            type: "players_update",
+            players: games[clientGameId].players,
+          })
+        );
+      }
+    }
+  });
+
+  ws.on("close", () => {
+    if (clientGameId && gameConnections[clientGameId]) {
+      gameConnections[clientGameId] = gameConnections[clientGameId].filter(
+        (conn) => conn !== ws
+      );
+    }
+  });
+});
+
 app.get("/api/test", (req: Request, res: Response) => {
   res.json({ message: "Backend is working!" });
 });
@@ -35,6 +75,20 @@ app.post("/api/games/:gameId/players", (req: Request, res: Response) => {
   }
 
   games[gameId].players[playerId] = { name };
+
+  // Broadcast to all clients in this game
+  if (gameConnections[gameId]) {
+    const message = JSON.stringify({
+      type: "players_update",
+      players: games[gameId].players,
+    });
+    gameConnections[gameId].forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(message);
+      }
+    });
+  }
+
   res.json(games[gameId]);
 });
 
