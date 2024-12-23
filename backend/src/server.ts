@@ -12,7 +12,12 @@ interface Player {
 
 interface Game {
   players: Record<string, { name: string; score: number }>;
-  gameState: "waiting" | "in-progress" | "voting" | "review_results";
+  gameState:
+    | "waiting"
+    | "ready"
+    | "round_started"
+    | "voting"
+    | "review_results";
   words?: string[];
   secretWord?: string;
   susPlayer?: string;
@@ -110,7 +115,7 @@ app.post("/api/games/:gameId/start", (req: Request, res: Response) => {
     res.status(404).json({ error: "Game not found" });
     return;
   }
-  games[gameId].gameState = "in-progress";
+  games[gameId].gameState = "ready";
 
   if (gameConnections[gameId]) {
     const message = JSON.stringify({
@@ -134,7 +139,7 @@ app.post("/api/games/:gameId/next-round", (req: Request, res: Response) => {
   }
 
   games[gameId].votes = {};
-  games[gameId].gameState = "in-progress";
+  games[gameId].gameState = "round_started";
 
   const words = ["apple", "salsa", "pop", uuidv4()];
   const randomIndex = Math.floor(Math.random() * words.length);

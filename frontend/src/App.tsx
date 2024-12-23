@@ -1,6 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { v4 as uuidv4 } from "uuid";
+import { WaitingState } from "./components/WaitingState";
+import { RoundStartedState } from "./components/RoundStartedState";
+import { VotingState } from "./components/VotingState";
+import { ReviewResultsState } from "./components/ReviewResultsState";
 
 interface ApiResponse {
   message: string;
@@ -8,7 +12,12 @@ interface ApiResponse {
 
 interface Game {
   players: Record<string, { name: string; score: number }>;
-  gameState: "waiting" | "in-progress" | "voting" | "review_results";
+  gameState:
+    | "waiting"
+    | "ready"
+    | "round_started"
+    | "voting"
+    | "review_results";
   words?: string[];
   secretWord?: string;
   susPlayer?: string;
@@ -172,145 +181,47 @@ function App() {
           }}
         >
           <button onClick={goBack}>Back</button>
-          {game.gameState === "waiting" && (
-            <>
-              <button onClick={toggleQR}>
-                {showQR ? "Hide QR Code" : "Show QR Code"}
-              </button>
-              <button onClick={startGame}>Start Game</button>
-            </>
-          )}
         </div>
 
-        <div style={{ margin: "20px 0" }}>
-          {game.gameState === "waiting" && (
-            <input
-              type="text"
-              value={playerName}
-              onChange={(e) => setPlayerName(e.target.value)}
-              placeholder="Enter your name"
-              style={{
-                padding: "0.6em 1.2em",
-                borderRadius: "8px",
-                border: "1px solid #646cff",
-                backgroundColor: "transparent",
-                fontSize: "1em",
-                fontFamily: "inherit",
-              }}
-            />
-          )}
-        </div>
-
-        <div style={{ margin: "20px 0" }}>
-          <h3>Players in game:</h3>
-          <ul style={{ listStyle: "none", padding: 0 }}>
-            {Object.entries(game.players).map(([id, player]) => (
-              <li key={id}>
-                {game.gameState === "voting" && id !== playerId ? (
-                  <button
-                    onClick={() => handleVote(id)}
-                    style={{
-                      margin: "5px 0",
-                      width: "100%",
-                      maxWidth: "200px",
-                      backgroundColor: "#646cff",
-                      color: "white",
-                    }}
-                  >
-                    Vote for {player.name}
-                  </button>
-                ) : (
-                  <span>
-                    {player.name}: {player.score}
-                    {id === playerId &&
-                      game.votes &&
-                      game.votes[playerId] &&
-                      " (You voted)"}
-                  </span>
-                )}
-              </li>
-            ))}
-          </ul>
-          {game.gameState === "in-progress" && (
-            <div style={{ marginTop: "20px" }}>
-              <button
-                onClick={handleNextRound}
-                style={{ marginBottom: "10px" }}
-              >
-                Next Round
-              </button>
-              {countdown !== null && (
-                <div style={{ fontSize: "24px", margin: "10px 0" }}>
-                  {countdown}
-                </div>
-              )}
-              {showSecretWord && (
-                <div
-                  style={{
-                    fontSize: "24px",
-                    margin: "10px 0",
-                    color: "#646cff",
-                  }}
-                >
-                  {game.susPlayer === playerId ? "you sus" : game.secretWord}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {game.words && (
-          <div style={{ marginTop: "20px" }}>
-            <h3>Words:</h3>
-            <ul style={{ listStyle: "none", padding: 0 }}>
-              {game.words.map((word, index) => (
-                <li key={index}>{word}</li>
-              ))}
-            </ul>
-          </div>
+        {game.gameState === "waiting" && (
+          <WaitingState
+            playerName={playerName}
+            setPlayerName={setPlayerName}
+            showQR={showQR}
+            toggleQR={toggleQR}
+            startGame={startGame}
+            players={game.players}
+          />
         )}
 
-        {showQR && (
-          <div style={{ marginTop: "20px" }}>
-            <QRCodeSVG value={window.location.href} size={256} level="H" />
-          </div>
+        {game.gameState === "round_started" && (
+          <RoundStartedState
+            countdown={countdown}
+            showSecretWord={showSecretWord}
+            secretWord={game.secretWord}
+            susPlayer={game.susPlayer}
+            playerId={playerId}
+            words={game.words}
+            players={game.players}
+          />
+        )}
+
+        {game.gameState === "voting" && (
+          <VotingState
+            players={game.players}
+            playerId={playerId}
+            votes={game.votes}
+            handleVote={handleVote}
+          />
         )}
 
         {game.gameState === "review_results" && (
-          <div
-            style={{
-              marginTop: "20px",
-              padding: "20px",
-              border: "1px solid #646cff",
-              borderRadius: "8px",
-            }}
-          >
-            <h3>Results:</h3>
-            <p style={{ color: "#646cff" }}>
-              The sus player was: {game.players[game.susPlayer || ""].name}
-            </p>
-            <h4>Votes:</h4>
-            <ul style={{ listStyle: "none", padding: 0 }}>
-              {Object.entries(game.votes || {}).map(([voterId, votedForId]) => (
-                <li key={voterId}>
-                  {game.players[voterId].name} voted for{" "}
-                  {game.players[votedForId].name}
-                </li>
-              ))}
-            </ul>
-            <button
-              onClick={handleNextRound}
-              style={{
-                marginTop: "20px",
-                backgroundColor: "#646cff",
-                color: "white",
-                padding: "10px 20px",
-                borderRadius: "8px",
-              }}
-            >
-              Next Round
-            </button>
-          </div>
+          <ReviewResultsState
+            players={game.players}
+            susPlayer={game.susPlayer}
+            votes={game.votes}
+            handleNextRound={handleNextRound}
+          />
         )}
       </div>
     );
