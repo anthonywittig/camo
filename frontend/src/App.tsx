@@ -8,10 +8,11 @@ interface ApiResponse {
 
 interface Game {
   players: Record<string, { name: string; score: number }>;
-  gameState: "waiting" | "in-progress";
+  gameState: "waiting" | "in-progress" | "voting";
   words?: string[];
   secretWord?: string;
   susPlayer?: string;
+  votes?: Record<string, string>; // key: voterId, value: votedForId
 }
 
 function App() {
@@ -53,13 +54,19 @@ function App() {
           if (data.type === "players_update") {
             setGame((prevGame) => ({ ...prevGame, players: data.players }));
           } else if (data.type === "game_state_update") {
-            setGame((prevGame) => ({ ...prevGame, gameState: data.gameState }));
+            setGame((prevGame) => ({
+              ...prevGame,
+              gameState: data.gameState,
+              votes: data.votes,
+              players: data.players || prevGame.players,
+            }));
           } else if (data.type === "round_start") {
             setGame((prevGame) => ({
               ...prevGame,
               words: data.words,
               secretWord: data.secretWord,
               susPlayer: data.susPlayer,
+              votes: {}, // Reset votes at the start of a new round
             }));
             // Start countdown for all players
             setCountdown(5);
@@ -71,6 +78,10 @@ function App() {
                   setShowSecretWord(true);
                   setTimeout(() => {
                     setShowSecretWord(false);
+                    setGame((prevGame) => ({
+                      ...prevGame,
+                      gameState: "voting",
+                    }));
                   }, 3000);
                   return null;
                 }
@@ -136,6 +147,19 @@ function App() {
     }).catch((error) => console.error("Error:", error));
   };
 
+  const handleVote = (votedForId: string) => {
+    fetch(`/api/games/${gameId}/vote`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        voterId: playerId,
+        votedForId,
+      }),
+    }).catch((error) => console.error("Error:", error));
+  };
+
   if (isGameRoute) {
     return (
       <div className="App">
@@ -180,9 +204,30 @@ function App() {
         <div style={{ margin: "20px 0" }}>
           <h3>Players in game:</h3>
           <ul style={{ listStyle: "none", padding: 0 }}>
-            {Object.values(game.players).map((player, index) => (
-              <li key={index}>
-                {player.name}: {player.score}
+            {Object.entries(game.players).map(([id, player]) => (
+              <li key={id}>
+                {game.gameState === "voting" && id !== playerId ? (
+                  <button
+                    onClick={() => handleVote(id)}
+                    style={{
+                      margin: "5px 0",
+                      width: "100%",
+                      maxWidth: "200px",
+                      backgroundColor: "#646cff",
+                      color: "white",
+                    }}
+                  >
+                    Vote for {player.name}
+                  </button>
+                ) : (
+                  <span>
+                    {player.name}: {player.score}
+                    {id === playerId &&
+                      game.votes &&
+                      game.votes[playerId] &&
+                      " (You voted)"}
+                  </span>
+                )}
               </li>
             ))}
           </ul>

@@ -12,9 +12,10 @@ interface Player {
 
 interface Game {
   players: Record<string, Player>;
-  gameState: "waiting" | "in-progress";
+  gameState: "waiting" | "in-progress" | "voting";
   secretWord?: string;
   susPlayer?: string;
+  votes?: Record<string, string>;
 }
 
 const games: Record<string, Game> = {};
@@ -131,6 +132,9 @@ app.post("/api/games/:gameId/next-round", (req: Request, res: Response) => {
     return;
   }
 
+  games[gameId].votes = {};
+  games[gameId].gameState = "in-progress"; // Reset game state to in-progress
+
   const words = ["apple", "salsa", "pop", uuidv4()];
   const randomIndex = Math.floor(Math.random() * words.length);
   games[gameId].secretWord = words[randomIndex];
@@ -160,6 +164,79 @@ app.post("/api/games/:gameId/next-round", (req: Request, res: Response) => {
     secretWord: games[gameId].secretWord,
     susPlayer: games[gameId].susPlayer,
   });
+});
+
+app.post("/api/games/:gameId/vote", (req: Request, res: Response) => {
+  const { gameId } = req.params;
+  const { voterId, votedForId } = req.body;
+
+  if (!games[gameId]) {
+    res.status(404).json({ error: "Game not found" });
+    return;
+  }
+
+  if (!games[gameId].votes) {
+    games[gameId].votes = {};
+  }
+
+  games[gameId].votes[voterId] = votedForId;
+  games[gameId].gameState = "voting";
+
+  // Check if everyone has voted
+  const playerCount = Object.keys(games[gameId].players).length;
+  const voteCount = Object.keys(games[gameId].votes).length;
+
+  if (voteCount === playerCount) {
+    // Calculate results
+    const voteCounts: Record<string, number> = {};
+    Object.values(games[gameId].votes).forEach((votedId) => {
+      voteCounts[votedId] = (voteCounts[votedId] || 0) + 1;
+    });
+
+    // Find player with most votes
+    let maxVotes = 0;
+    let mostVotedPlayer = "";
+    Object.entries(voteCounts).forEach(([playerId, votes]) => {
+      if (votes > maxVotes) {
+        maxVotes = votes;
+        mostVotedPlayer = playerId;
+      }
+    });
+
+    // Award points
+    if (mostVotedPlayer === games[gameId].susPlayer) {
+      // Non-sus players win
+      Object.entries(games[gameId].players).forEach(([playerId, player]) => {
+        if (playerId !== games[gameId].susPlayer) {
+          games[gameId].players[playerId].score += 1;
+        }
+      });
+    } else {
+      // Sus player wins
+      if (games[gameId].susPlayer) {
+        games[gameId].players[games[gameId].susPlayer].score += 2;
+      }
+    }
+
+    games[gameId].gameState = "voting"; // Set to voting state to show results
+  }
+
+  // Broadcast updated game state
+  if (gameConnections[gameId]) {
+    const message = JSON.stringify({
+      type: "game_state_update",
+      gameState: games[gameId].gameState,
+      players: games[gameId].players,
+      votes: games[gameId].votes,
+    });
+    gameConnections[gameId].forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(message);
+      }
+    });
+  }
+
+  res.json({ success: true });
 });
 
 app.get("*", (req, res) => {
