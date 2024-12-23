@@ -9,6 +9,7 @@ interface ApiResponse {
 interface Game {
   players: Record<string, { name: string }>;
   gameState: "waiting" | "in-progress";
+  words?: string[];
 }
 
 function App() {
@@ -49,6 +50,8 @@ function App() {
             setGame((prevGame) => ({ ...prevGame, players: data.players }));
           } else if (data.type === "game_state_update") {
             setGame((prevGame) => ({ ...prevGame, gameState: data.gameState }));
+          } else if (data.type === "words_update") {
+            setGame((prevGame) => ({ ...prevGame, words: data.words }));
           }
         } catch (error) {
           console.error("Error parsing WebSocket message:", error);
@@ -147,7 +150,33 @@ function App() {
               <li key={index}>{player.name}</li>
             ))}
           </ul>
+          {game.gameState === "in-progress" && (
+            <button
+              onClick={() => {
+                fetch(`/api/games/${gameId}/next-round`, {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                }).catch((error) => console.error("Error:", error));
+              }}
+              style={{ marginTop: "20px" }}
+            >
+              Next Round
+            </button>
+          )}
         </div>
+
+        {game.words && (
+          <div style={{ marginTop: "20px" }}>
+            <h3>Words:</h3>
+            <ul style={{ listStyle: "none", padding: 0 }}>
+              {game.words.map((word, index) => (
+                <li key={index}>{word}</li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {showQR && (
           <div style={{ marginTop: "20px" }}>

@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import path from "path";
 import { WebSocket, WebSocketServer } from "ws";
+import { v4 as uuidv4 } from "uuid";
 
 interface Player {
   name: string;
@@ -118,6 +119,31 @@ app.post("/api/games/:gameId/start", (req: Request, res: Response) => {
     });
   }
   res.json(games[gameId]);
+});
+
+app.post("/api/games/:gameId/next-round", (req: Request, res: Response) => {
+  const { gameId } = req.params;
+  if (!games[gameId]) {
+    res.status(404).json({ error: "Game not found" });
+    return;
+  }
+
+  const words = ["apple", "salsa", "pop", uuidv4()];
+
+  // Send the words update to all connected clients
+  if (gameConnections[gameId]) {
+    const message = JSON.stringify({
+      type: "words_update",
+      words: words,
+    });
+    gameConnections[gameId].forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(message);
+      }
+    });
+  }
+
+  res.json({ words });
 });
 
 app.get("*", (req, res) => {
