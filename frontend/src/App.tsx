@@ -8,7 +8,7 @@ function App() {
   const [message, setMessage] = useState<string>("");
 
   useEffect(() => {
-    fetch("http://localhost:5001/api/test")
+    fetch("/api/test")
       .then((response) => response.json())
       .then((data: ApiResponse) => setMessage(data.message))
       .catch((error) => console.error("Error:", error));
