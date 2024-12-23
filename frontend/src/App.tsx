@@ -53,12 +53,28 @@ function App() {
             setGame((prevGame) => ({ ...prevGame, players: data.players }));
           } else if (data.type === "game_state_update") {
             setGame((prevGame) => ({ ...prevGame, gameState: data.gameState }));
-          } else if (data.type === "words_update") {
+          } else if (data.type === "round_start") {
             setGame((prevGame) => ({
               ...prevGame,
               words: data.words,
               secretWord: data.secretWord,
             }));
+            // Start countdown for all players
+            setCountdown(5);
+            const timer = setInterval(() => {
+              setCountdown((prev) => {
+                if (prev === null) return null;
+                if (prev <= 1) {
+                  clearInterval(timer);
+                  setShowSecretWord(true);
+                  setTimeout(() => {
+                    setShowSecretWord(false);
+                  }, 3000);
+                  return null;
+                }
+                return prev - 1;
+              });
+            }, 1000);
           }
         } catch (error) {
           console.error("Error parsing WebSocket message:", error);
@@ -115,26 +131,7 @@ function App() {
       headers: {
         "Content-Type": "application/json",
       },
-    })
-      .then(() => {
-        setCountdown(5);
-        const timer = setInterval(() => {
-          setCountdown((prev) => {
-            if (prev === null) return null;
-            if (prev <= 1) {
-              clearInterval(timer);
-              setShowSecretWord(true);
-              // Hide secret word after 3 seconds
-              setTimeout(() => {
-                setShowSecretWord(false);
-              }, 3000);
-              return null;
-            }
-            return prev - 1;
-          });
-        }, 1000);
-      })
-      .catch((error) => console.error("Error:", error));
+    }).catch((error) => console.error("Error:", error));
   };
 
   if (isGameRoute) {

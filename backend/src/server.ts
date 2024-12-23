@@ -133,10 +133,10 @@ app.post("/api/games/:gameId/next-round", (req: Request, res: Response) => {
   const randomIndex = Math.floor(Math.random() * words.length);
   games[gameId].secretWord = words[randomIndex];
 
-  // Send the words update to all connected clients
+  // Send the countdown start and words update to all connected clients
   if (gameConnections[gameId]) {
     const message = JSON.stringify({
-      type: "words_update",
+      type: "round_start",
       words: words,
       secretWord: games[gameId].secretWord,
     });
