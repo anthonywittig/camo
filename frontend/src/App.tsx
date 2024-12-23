@@ -8,7 +8,7 @@ interface ApiResponse {
 
 interface Game {
   players: Record<string, { name: string; score: number }>;
-  gameState: "waiting" | "in-progress" | "voting";
+  gameState: "waiting" | "in-progress" | "voting" | "review_results";
   words?: string[];
   secretWord?: string;
   susPlayer?: string;
@@ -273,6 +273,43 @@ function App() {
         {showQR && (
           <div style={{ marginTop: "20px" }}>
             <QRCodeSVG value={window.location.href} size={256} level="H" />
+          </div>
+        )}
+
+        {game.gameState === "review_results" && (
+          <div
+            style={{
+              marginTop: "20px",
+              padding: "20px",
+              border: "1px solid #646cff",
+              borderRadius: "8px",
+            }}
+          >
+            <h3>Results:</h3>
+            <p style={{ color: "#646cff" }}>
+              The sus player was: {game.players[game.susPlayer || ""].name}
+            </p>
+            <h4>Votes:</h4>
+            <ul style={{ listStyle: "none", padding: 0 }}>
+              {Object.entries(game.votes || {}).map(([voterId, votedForId]) => (
+                <li key={voterId}>
+                  {game.players[voterId].name} voted for{" "}
+                  {game.players[votedForId].name}
+                </li>
+              ))}
+            </ul>
+            <button
+              onClick={handleNextRound}
+              style={{
+                marginTop: "20px",
+                backgroundColor: "#646cff",
+                color: "white",
+                padding: "10px 20px",
+                borderRadius: "8px",
+              }}
+            >
+              Next Round
+            </button>
           </div>
         )}
       </div>

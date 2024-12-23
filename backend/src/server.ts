@@ -11,8 +11,9 @@ interface Player {
 }
 
 interface Game {
-  players: Record<string, Player>;
-  gameState: "waiting" | "in-progress" | "voting";
+  players: Record<string, { name: string; score: number }>;
+  gameState: "waiting" | "in-progress" | "voting" | "review_results";
+  words?: string[];
   secretWord?: string;
   susPlayer?: string;
   votes?: Record<string, string>;
@@ -133,7 +134,7 @@ app.post("/api/games/:gameId/next-round", (req: Request, res: Response) => {
   }
 
   games[gameId].votes = {};
-  games[gameId].gameState = "in-progress"; // Reset game state to in-progress
+  games[gameId].gameState = "in-progress";
 
   const words = ["apple", "salsa", "pop", uuidv4()];
   const randomIndex = Math.floor(Math.random() * words.length);
@@ -218,7 +219,7 @@ app.post("/api/games/:gameId/vote", (req: Request, res: Response) => {
       }
     }
 
-    games[gameId].gameState = "voting"; // Set to voting state to show results
+    games[gameId].gameState = "review_results";
   }
 
   // Broadcast updated game state
@@ -228,6 +229,7 @@ app.post("/api/games/:gameId/vote", (req: Request, res: Response) => {
       gameState: games[gameId].gameState,
       players: games[gameId].players,
       votes: games[gameId].votes,
+      susPlayer: games[gameId].susPlayer,
     });
     gameConnections[gameId].forEach((client) => {
       if (client.readyState === WebSocket.OPEN) {
