@@ -9,6 +9,7 @@ interface ApiResponse {
 function App() {
   const [message, setMessage] = useState<string>("");
   const [showQR, setShowQR] = useState(false);
+  const [playerName, setPlayerName] = useState("");
   const isGameRoute = window.location.pathname.length > 1;
 
   useEffect(() => {
@@ -34,13 +35,36 @@ function App() {
   if (isGameRoute) {
     return (
       <div className="App">
-        <button onClick={goBack} style={{ marginBottom: "20px" }}>
-          Back
-        </button>
+        <div
+          style={{
+            display: "flex",
+            gap: "10px",
+            justifyContent: "center",
+            marginBottom: "20px",
+          }}
+        >
+          <button onClick={goBack}>Back</button>
+          <button onClick={toggleQR}>
+            {showQR ? "Hide QR Code" : "Show QR Code"}
+          </button>
+        </div>
 
-        <button onClick={toggleQR}>
-          {showQR ? "Hide QR Code" : "Show QR Code"}
-        </button>
+        <div style={{ margin: "20px 0" }}>
+          <input
+            type="text"
+            value={playerName}
+            onChange={(e) => setPlayerName(e.target.value)}
+            placeholder="Enter your name"
+            style={{
+              padding: "0.6em 1.2em",
+              borderRadius: "8px",
+              border: "1px solid #646cff",
+              backgroundColor: "transparent",
+              fontSize: "1em",
+              fontFamily: "inherit",
+            }}
+          />
+        </div>
 
         {showQR && (
           <div style={{ marginTop: "20px" }}>
