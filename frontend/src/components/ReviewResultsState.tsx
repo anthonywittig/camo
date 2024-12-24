@@ -24,14 +24,7 @@ export function ReviewResultsState({
   pointsGained = [],
 }: ReviewResultsStateProps) {
   return (
-    <div
-      style={{
-        marginTop: "20px",
-        padding: "20px",
-        border: "1px solid #646cff",
-        borderRadius: "8px",
-      }}
-    >
+    <>
       <h3>Results:</h3>
       <p style={{ color: "#646cff" }}>
         The sus player was: {players[susPlayer || ""].name}
@@ -82,6 +75,6 @@ export function ReviewResultsState({
       >
         Next Round
       </button>
-    </div>
+    </>
   );
 }

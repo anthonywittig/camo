@@ -190,18 +190,34 @@ function App() {
         </div>
 
         {game.gameState === "waiting" && (
-          <WaitingState
-            playerName={playerName}
-            setPlayerName={setPlayerName}
-            showQR={showQR}
-            toggleQR={toggleQR}
-            startGame={startGame}
-            players={game.players}
-          />
+          <div
+            style={{
+              marginTop: "20px",
+              padding: "20px",
+              border: "1px solid #646cff",
+              borderRadius: "8px",
+            }}
+          >
+            <WaitingState
+              playerName={playerName}
+              setPlayerName={setPlayerName}
+              showQR={showQR}
+              toggleQR={toggleQR}
+              startGame={startGame}
+              players={game.players}
+            />
+          </div>
         )}
 
         {game.gameState === "ready" && (
-          <div>
+          <div
+            style={{
+              marginTop: "20px",
+              padding: "20px",
+              border: "1px solid #646cff",
+              borderRadius: "8px",
+            }}
+          >
             <h2>Get Ready!</h2>
             <p>The game is about to begin...</p>
             <p>All players have joined and we're preparing the first round.</p>
@@ -220,50 +236,86 @@ function App() {
         )}
 
         {game.gameState === "round_started" && (
-          <RoundStartedState
-            secretWord={game.secretWord}
-            susPlayer={game.susPlayer}
-            playerId={playerId}
-            words={game.words}
-            players={game.players}
-            onTransitionToVoting={() =>
-              setGame((prevGame) => ({
-                ...prevGame,
-                gameState: "voting_phase_1",
-              }))
-            }
-          />
+          <div
+            style={{
+              marginTop: "20px",
+              padding: "20px",
+              border: "1px solid #646cff",
+              borderRadius: "8px",
+            }}
+          >
+            <RoundStartedState
+              secretWord={game.secretWord}
+              susPlayer={game.susPlayer}
+              playerId={playerId}
+              words={game.words}
+              players={game.players}
+              onTransitionToVoting={() =>
+                setGame((prevGame) => ({
+                  ...prevGame,
+                  gameState: "voting_phase_1",
+                }))
+              }
+            />
+          </div>
         )}
 
         {game.gameState === "voting_phase_1" && (
-          <VotingPhase1State
-            players={game.players}
-            playerId={playerId}
-            votes={game.votes}
-            handleVote={handleVote}
-            words={game.words}
-          />
+          <div
+            style={{
+              marginTop: "20px",
+              padding: "20px",
+              border: "1px solid #646cff",
+              borderRadius: "8px",
+            }}
+          >
+            <VotingPhase1State
+              players={game.players}
+              playerId={playerId}
+              votes={game.votes}
+              handleVote={handleVote}
+              words={game.words}
+            />
+          </div>
         )}
 
         {game.gameState === "voting_phase_2" && (
-          <VotingPhase2State
-            words={game.words}
-            playerId={playerId}
-            susPlayer={game.susPlayer}
-            handleWordGuess={handleWordGuess}
-          />
+          <div
+            style={{
+              marginTop: "20px",
+              padding: "20px",
+              border: "1px solid #646cff",
+              borderRadius: "8px",
+            }}
+          >
+            <VotingPhase2State
+              words={game.words}
+              playerId={playerId}
+              susPlayer={game.susPlayer}
+              handleWordGuess={handleWordGuess}
+            />
+          </div>
         )}
 
         {game.gameState === "review_results" && (
-          <ReviewResultsState
-            players={game.players}
-            susPlayer={game.susPlayer}
-            votes={game.votes}
-            handleNextRound={handleNextRound}
-            words={game.words}
-            secretWord={game.secretWord}
-            pointsGained={game.pointsGained}
-          />
+          <div
+            style={{
+              marginTop: "20px",
+              padding: "20px",
+              border: "1px solid #646cff",
+              borderRadius: "8px",
+            }}
+          >
+            <ReviewResultsState
+              players={game.players}
+              susPlayer={game.susPlayer}
+              votes={game.votes}
+              handleNextRound={handleNextRound}
+              words={game.words}
+              secretWord={game.secretWord}
+              pointsGained={game.pointsGained}
+            />
+          </div>
         )}
       </div>
     );
