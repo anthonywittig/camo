@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import path from "path";
 import { WebSocket, WebSocketServer } from "ws";
 import { v4 as uuidv4 } from "uuid";
+import { topics } from "./topics";
 
 interface Player {
   name: string;
@@ -146,7 +147,7 @@ app.post("/api/games/:gameId/next-round", (req: Request, res: Response) => {
   games[gameId].votes = {};
   games[gameId].gameState = "round_started";
 
-  const words = ["apple", "salsa", "pop", uuidv4()];
+  const words = topics[Math.floor(Math.random() * topics.length)];
   const randomIndex = Math.floor(Math.random() * words.length);
   games[gameId].secretWord = words[randomIndex];
 
