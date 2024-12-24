@@ -40,6 +40,7 @@ function App() {
     pointsGained: [],
   });
   const wsRef = useRef<WebSocket | null>(null);
+  const [showWarning, setShowWarning] = useState(false);
 
   const isGameRoute = window.location.pathname.length > 1;
   const gameId = isGameRoute ? window.location.pathname.slice(1) : "";
@@ -50,7 +51,10 @@ function App() {
     fetch("/api/test")
       .then((response) => response.json())
       .then((data: ApiResponse) => setMessage(data.message))
-      .catch((error) => console.error("Error:", error));
+      .catch((error) => {
+        console.error("Error:", error);
+        setShowWarning(true);
+      });
   }, []);
 
   useEffect(() => {
@@ -182,7 +186,7 @@ function App() {
             marginBottom: "20px",
           }}
         >
-          <button onClick={goBack}>Back</button>
+          <button onClick={goBack}>Quit</button>
         </div>
 
         {game.gameState === "waiting" && (
@@ -268,11 +272,20 @@ function App() {
   return (
     <div className="App">
       <h1>My Full Stack App</h1>
-      <p>Message from backend: {message}</p>
-
-      <button onClick={createNewGame} style={{ marginBottom: "20px" }}>
-        Create New Game
-      </button>
+      {showWarning ? (
+        <div style={{ color: "red", marginBottom: "20px" }}>
+          Warning: Cannot connect to backend server. Please try again later.
+        </div>
+      ) : message ? (
+        <>
+          <p>Message from backend: {message}</p>
+          <button onClick={createNewGame} style={{ marginBottom: "20px" }}>
+            Create New Game
+          </button>
+        </>
+      ) : (
+        <p>Connecting to backend...</p>
+      )}
     </div>
   );
 }
