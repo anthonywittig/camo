@@ -5,6 +5,7 @@ import { RoundStartedState } from "./components/RoundStartedState";
 import { VotingPhase1State } from "./components/VotingPhase1State";
 import { ReviewResultsState } from "./components/ReviewResultsState";
 import { VotingPhase2State } from "./components/VotingPhase2State";
+import { ImageUpload } from "./components/ImageUpload";
 
 interface ApiResponse {
   message: string;
@@ -41,6 +42,7 @@ function App() {
   });
   const wsRef = useRef<WebSocket | null>(null);
   const [showWarning, setShowWarning] = useState(false);
+  const [showImageUpload, setShowImageUpload] = useState(false);
 
   const isGameRoute = window.location.pathname.length > 1;
   const gameId = isGameRoute ? window.location.pathname.slice(1) : "";
@@ -140,12 +142,15 @@ function App() {
     }).catch((error) => console.error("Error:", error));
   };
 
-  const handleNextRound = () => {
+  const handleNextRound = (customWords?: string[]) => {
     fetch(`/api/games/${gameId}/next-round`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
+      body: JSON.stringify({
+        words: customWords,
+      }),
     }).catch((error) => console.error("Error:", error));
   };
 
@@ -229,9 +234,24 @@ function App() {
                 </div>
               ))}
             </div>
-            <button onClick={handleNextRound} style={{ marginTop: "20px" }}>
-              Start Round
-            </button>
+            {showImageUpload ? (
+              <div>
+                <ImageUpload onWordsExtracted={handleNextRound} />
+                <button
+                  onClick={() => handleNextRound()}
+                  style={{ marginTop: "20px", marginLeft: "10px" }}
+                >
+                  Skip Image Upload
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowImageUpload(true)}
+                style={{ marginTop: "20px" }}
+              >
+                Start Round
+              </button>
+            )}
           </div>
         )}
 

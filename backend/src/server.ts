@@ -138,6 +138,8 @@ app.post("/api/games/:gameId/start", (req: Request, res: Response) => {
 
 app.post("/api/games/:gameId/next-round", (req: Request, res: Response) => {
   const { gameId } = req.params;
+  const { words: customWords } = req.body;
+
   if (!games[gameId]) {
     res.status(404).json({ error: "Game not found" });
     return;
@@ -146,7 +148,7 @@ app.post("/api/games/:gameId/next-round", (req: Request, res: Response) => {
   games[gameId].votes = {};
   games[gameId].gameState = "round_started";
 
-  const words = ["apple", "salsa", "pop", uuidv4()];
+  const words = customWords || ["apple", "salsa", "pop", uuidv4()];
   const randomIndex = Math.floor(Math.random() * words.length);
   games[gameId].secretWord = words[randomIndex];
 
