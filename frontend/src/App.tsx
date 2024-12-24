@@ -41,6 +41,7 @@ function App() {
   });
   const wsRef = useRef<WebSocket | null>(null);
   const [showWarning, setShowWarning] = useState(false);
+  const [roundKey, setRoundKey] = useState(0);
 
   const isGameRoute = window.location.pathname.length > 1;
   const gameId = isGameRoute ? window.location.pathname.slice(1) : "";
@@ -141,6 +142,7 @@ function App() {
   };
 
   const handleNextRound = () => {
+    setRoundKey((prev) => prev + 1);
     fetch(`/api/games/${gameId}/next-round`, {
       method: "POST",
       headers: {
@@ -229,7 +231,16 @@ function App() {
                 </div>
               ))}
             </div>
-            <button onClick={handleNextRound} style={{ marginTop: "20px" }}>
+            <button
+              onClick={handleNextRound}
+              style={{
+                marginTop: "20px",
+                backgroundColor: "#646cff",
+                color: "white",
+                padding: "10px 20px",
+                borderRadius: "8px",
+              }}
+            >
               Start Round
             </button>
           </div>
@@ -245,6 +256,7 @@ function App() {
             }}
           >
             <RoundStartedState
+              key={roundKey}
               secretWord={game.secretWord}
               susPlayer={game.susPlayer}
               playerId={playerId}
@@ -256,6 +268,7 @@ function App() {
                   gameState: "voting_phase_1",
                 }))
               }
+              onSkipRound={handleNextRound}
             />
           </div>
         )}

@@ -31,7 +31,17 @@ export function WaitingState({
         <button onClick={toggleQR}>
           {showQR ? "Hide QR Code" : "Show QR Code"}
         </button>
-        <button onClick={startGame}>Start Game</button>
+        <button
+          onClick={startGame}
+          style={{
+            backgroundColor: "#646cff",
+            color: "white",
+            padding: "10px 20px",
+            borderRadius: "8px",
+          }}
+        >
+          Start Game
+        </button>
       </div>
 
       <div style={{ margin: "20px 0" }}>

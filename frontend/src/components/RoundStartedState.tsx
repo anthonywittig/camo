@@ -9,6 +9,7 @@ interface RoundStartedStateProps {
   words?: string[];
   players: Record<string, { name: string; score: number }>;
   onTransitionToVoting: () => void;
+  onSkipRound: () => void;
 }
 
 export function RoundStartedState({
@@ -18,6 +19,7 @@ export function RoundStartedState({
   words,
   players,
   onTransitionToVoting,
+  onSkipRound,
 }: RoundStartedStateProps) {
   const [countdown, setCountdown] = useState<number | null>(5);
   const [showSecretWord, setShowSecretWord] = useState(false);
@@ -57,6 +59,8 @@ export function RoundStartedState({
       </div>
 
       {words && <WordsList words={words} />}
+
+      <button onClick={onSkipRound}>Skip Round</button>
     </>
   );
 }
