@@ -37,20 +37,36 @@ export function ReviewResultsState({
         The sus player was: {players[susPlayer || ""].name}
       </p>
 
-      <p>
-        The secret word was: <strong>{secretWord}</strong>
-      </p>
-
-      <PlayersList players={players} title="Final Scores:" />
-
       <h4>Votes:</h4>
       <ul style={{ listStyle: "none", padding: 0 }}>
         {Object.entries(votes || {}).map(([voterId, votedForId]) => (
-          <li key={voterId}>
+          <li
+            key={voterId}
+            style={{
+              color: votedForId === susPlayer ? "#646cff" : "inherit",
+            }}
+          >
             {players[voterId].name} voted for {players[votedForId].name}
           </li>
         ))}
       </ul>
+
+      <p>
+        The secret word was: <strong>{secretWord}</strong>
+      </p>
+
+      <div style={{ margin: "10px 0" }}>
+        <h4>Points Gained:</h4>
+        <ul style={{ listStyle: "none", padding: 0 }}>
+          {pointsGained.map(({ playerId, points }, index) => (
+            <li key={index}>
+              {players[playerId].name}: +{points} points
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <PlayersList players={players} title="Scores:" />
 
       {words && <WordsList words={words} />}
 
@@ -66,17 +82,6 @@ export function ReviewResultsState({
       >
         Next Round
       </button>
-
-      <div style={{ margin: "10px 0" }}>
-        <h4>Points Gained:</h4>
-        <ul style={{ listStyle: "none", padding: 0 }}>
-          {pointsGained.map(({ playerId, points }, index) => (
-            <li key={index}>
-              {players[playerId].name}: +{points} points
-            </li>
-          ))}
-        </ul>
-      </div>
     </div>
   );
 }
