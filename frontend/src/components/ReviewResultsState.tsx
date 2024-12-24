@@ -7,6 +7,11 @@ interface ReviewResultsStateProps {
   votes?: Record<string, string>;
   handleNextRound: () => void;
   words?: string[];
+  secretWord?: string;
+  pointsGained?: {
+    playerId: string;
+    points: number;
+  }[];
 }
 
 export function ReviewResultsState({
@@ -15,6 +20,8 @@ export function ReviewResultsState({
   votes,
   handleNextRound,
   words,
+  secretWord,
+  pointsGained = [],
 }: ReviewResultsStateProps) {
   return (
     <div
@@ -28,6 +35,10 @@ export function ReviewResultsState({
       <h3>Results:</h3>
       <p style={{ color: "#646cff" }}>
         The sus player was: {players[susPlayer || ""].name}
+      </p>
+
+      <p>
+        The secret word was: <strong>{secretWord}</strong>
       </p>
 
       <PlayersList players={players} title="Final Scores:" />
@@ -55,6 +66,17 @@ export function ReviewResultsState({
       >
         Next Round
       </button>
+
+      <div style={{ margin: "10px 0" }}>
+        <h4>Points Gained:</h4>
+        <ul style={{ listStyle: "none", padding: 0 }}>
+          {pointsGained.map(({ playerId, points }, index) => (
+            <li key={index}>
+              {players[playerId].name}: +{points} points
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }

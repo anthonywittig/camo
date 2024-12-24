@@ -23,6 +23,10 @@ interface Game {
   secretWord?: string;
   susPlayer?: string;
   votes?: Record<string, string>;
+  pointsGained?: {
+    playerId: string;
+    points: number;
+  }[];
 }
 
 const games: Record<string, Game> = {};
@@ -84,7 +88,7 @@ app.post("/api/games/:gameId/players", (req: Request, res: Response) => {
   const { playerId, name } = req.body;
 
   if (!games[gameId]) {
-    games[gameId] = { players: {}, gameState: "waiting" };
+    games[gameId] = { players: {}, gameState: "waiting", pointsGained: [] };
   }
 
   games[gameId].players[playerId] = { name, score: 0 };
@@ -212,13 +216,21 @@ app.post("/api/games/:gameId/vote", (req: Request, res: Response) => {
       }
     });
 
-    // Award points
+    games[gameId].pointsGained = [];
+
     if (mostVotedPlayer === games[gameId].susPlayer) {
       games[gameId].gameState = "voting_phase_2";
     } else {
       // Sus player wins
       if (games[gameId].susPlayer) {
+        if (!games[gameId].pointsGained) {
+          games[gameId].pointsGained = [];
+        }
         games[gameId].players[games[gameId].susPlayer].score += 2;
+        games[gameId].pointsGained.push({
+          playerId: games[gameId].susPlayer,
+          points: 2,
+        });
       }
       games[gameId].gameState = "review_results";
     }
@@ -232,6 +244,7 @@ app.post("/api/games/:gameId/vote", (req: Request, res: Response) => {
       players: games[gameId].players,
       votes: games[gameId].votes,
       susPlayer: games[gameId].susPlayer,
+      pointsGained: games[gameId].pointsGained,
     });
     gameConnections[gameId].forEach((client) => {
       if (client.readyState === WebSocket.OPEN) {
@@ -257,16 +270,35 @@ app.post("/api/games/:gameId/guess-word", (req: Request, res: Response) => {
     return;
   }
 
+  games[gameId].pointsGained = [];
+
   // Check if the guessed word matches the secret word
   if (word === games[gameId].secretWord) {
     // Award point to sus player for correct guess
     games[gameId].players[playerId].score += 1;
+    games[gameId].pointsGained.push({
+      playerId: playerId,
+      points: 1,
+    });
+  } else {
+    // Award points to everyone else
+    Object.keys(games[gameId].players).forEach((pid) => {
+      if (pid !== games[gameId].susPlayer) {
+        if (!games[gameId].pointsGained) {
+          games[gameId].pointsGained = [];
+        }
+        games[gameId].players[pid].score += 2;
+        games[gameId].pointsGained.push({
+          playerId: pid,
+          points: 2,
+        });
+      }
+    });
   }
 
-  // Move to review results regardless of correct/incorrect guess
   games[gameId].gameState = "review_results";
 
-  // Broadcast updated game state
+  // Update WebSocket message to include pointsGained
   if (gameConnections[gameId]) {
     const message = JSON.stringify({
       type: "game_state_update",
@@ -274,6 +306,7 @@ app.post("/api/games/:gameId/guess-word", (req: Request, res: Response) => {
       players: games[gameId].players,
       votes: games[gameId].votes,
       susPlayer: games[gameId].susPlayer,
+      pointsGained: games[gameId].pointsGained,
     });
     gameConnections[gameId].forEach((client) => {
       if (client.readyState === WebSocket.OPEN) {

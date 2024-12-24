@@ -23,6 +23,10 @@ interface Game {
   secretWord?: string;
   susPlayer?: string;
   votes?: Record<string, string>; // key: voterId, value: votedForId
+  pointsGained?: {
+    playerId: string;
+    points: number;
+  }[];
 }
 
 function App() {
@@ -30,7 +34,11 @@ function App() {
   const [showQR, setShowQR] = useState(false);
   const [playerName, setPlayerName] = useState("");
   const [playerId] = useState(() => uuidv4());
-  const [game, setGame] = useState<Game>({ players: {}, gameState: "waiting" });
+  const [game, setGame] = useState<Game>({
+    players: {},
+    gameState: "waiting",
+    pointsGained: [],
+  });
   const wsRef = useRef<WebSocket | null>(null);
 
   const isGameRoute = window.location.pathname.length > 1;
@@ -67,6 +75,7 @@ function App() {
               gameState: data.gameState,
               votes: data.votes,
               players: data.players || prevGame.players,
+              pointsGained: data.pointsGained || prevGame.pointsGained,
             }));
           } else if (data.type === "round_start") {
             setGame((prevGame) => ({
@@ -248,6 +257,8 @@ function App() {
             votes={game.votes}
             handleNextRound={handleNextRound}
             words={game.words}
+            secretWord={game.secretWord}
+            pointsGained={game.pointsGained}
           />
         )}
       </div>
