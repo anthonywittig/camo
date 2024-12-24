@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import path from "path";
 import { WebSocket, WebSocketServer } from "ws";
 import { v4 as uuidv4 } from "uuid";
+import { WordGenerator } from "./wordGenerator";
 
 interface Player {
   name: string;
@@ -30,6 +31,8 @@ interface Game {
 }
 
 const games: Record<string, Game> = {};
+
+const wordGenerator = new WordGenerator();
 
 dotenv.config();
 
@@ -136,48 +139,57 @@ app.post("/api/games/:gameId/start", (req: Request, res: Response) => {
   res.json(games[gameId]);
 });
 
-app.post("/api/games/:gameId/next-round", (req: Request, res: Response) => {
-  const { gameId } = req.params;
-  if (!games[gameId]) {
-    res.status(404).json({ error: "Game not found" });
-    return;
-  }
+app.post(
+  "/api/games/:gameId/next-round",
+  async (req: Request, res: Response) => {
+    const { gameId } = req.params;
+    if (!games[gameId]) {
+      res.status(404).json({ error: "Game not found" });
+      return;
+    }
 
-  games[gameId].votes = {};
-  games[gameId].gameState = "round_started";
+    games[gameId].votes = {};
+    games[gameId].gameState = "round_started";
 
-  const words = ["apple", "salsa", "pop", uuidv4()];
-  const randomIndex = Math.floor(Math.random() * words.length);
-  games[gameId].secretWord = words[randomIndex];
+    try {
+      const words = await wordGenerator.generateWords(4); // Get 4 words
+      const randomIndex = Math.floor(Math.random() * words.length);
+      games[gameId].secretWord = words[randomIndex];
+      games[gameId].words = words;
 
-  // Randomly select a sus player from the list of players
-  const playerIds = Object.keys(games[gameId].players);
-  const randomPlayerIndex = Math.floor(Math.random() * playerIds.length);
-  games[gameId].susPlayer = playerIds[randomPlayerIndex];
+      // Randomly select a sus player from the list of players
+      const playerIds = Object.keys(games[gameId].players);
+      const randomPlayerIndex = Math.floor(Math.random() * playerIds.length);
+      games[gameId].susPlayer = playerIds[randomPlayerIndex];
 
-  // Send the countdown start and words update to all connected clients
-  if (gameConnections[gameId]) {
-    gameConnections[gameId].forEach((client) => {
-      if (client.readyState === WebSocket.OPEN) {
-        const message = JSON.stringify({
-          type: "round_start",
-          gameState: games[gameId].gameState,
-          words: words,
-          secretWord: games[gameId].secretWord,
-          susPlayer: games[gameId].susPlayer,
-          players: games[gameId].players,
+      // Send the countdown start and words update to all connected clients
+      if (gameConnections[gameId]) {
+        gameConnections[gameId].forEach((client) => {
+          if (client.readyState === WebSocket.OPEN) {
+            const message = JSON.stringify({
+              type: "round_start",
+              gameState: games[gameId].gameState,
+              words: words,
+              secretWord: games[gameId].secretWord,
+              susPlayer: games[gameId].susPlayer,
+              players: games[gameId].players,
+            });
+            client.send(message);
+          }
         });
-        client.send(message);
       }
-    });
-  }
 
-  res.json({
-    words,
-    secretWord: games[gameId].secretWord,
-    susPlayer: games[gameId].susPlayer,
-  });
-});
+      res.json({
+        words,
+        secretWord: games[gameId].secretWord,
+        susPlayer: games[gameId].susPlayer,
+      });
+    } catch (error) {
+      console.error("Error generating words:", error);
+      res.status(500).json({ error: "Failed to generate words" });
+    }
+  }
+);
 
 app.post("/api/games/:gameId/vote", (req: Request, res: Response) => {
   const { gameId } = req.params;

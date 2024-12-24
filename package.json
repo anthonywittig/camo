@@ -5,10 +5,11 @@
     "start": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm run dev\"",
     "build": "concurrently \"cd backend && npm run build\" \"cd frontend && npm run build\"",
     "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install",
-    "docker:clean": "docker rm -f camo || true",
-    "docker:build": "npm run docker:clean && docker build -t camo ./backend",
-    "docker:run": "docker run --name camo -p 0.0.0.0:5001:5001 -p 0.0.0.0:5002:5002 camo",
-    "docker:start": "npm run docker:build && npm run docker:run"
+    "docker:clean": "docker-compose down -v",
+    "docker:build": "docker-compose build",
+    "docker:start": "docker-compose up",
+    "docker:start-d": "docker-compose up -d",
+    "docker:pull-model": "docker-compose exec ollama ollama pull llama2"
   },
   "devDependencies": {
     "concurrently": "^8.0.1"
