@@ -16,7 +16,8 @@ interface Game {
     | "waiting"
     | "ready"
     | "round_started"
-    | "voting"
+    | "voting_phase_1"
+    | "voting_phase_2"
     | "review_results";
   words?: string[];
   secretWord?: string;
@@ -188,7 +189,7 @@ app.post("/api/games/:gameId/vote", (req: Request, res: Response) => {
   }
 
   games[gameId].votes[voterId] = votedForId;
-  games[gameId].gameState = "voting";
+  games[gameId].gameState = "voting_phase_1";
 
   // Check if everyone has voted
   const playerCount = Object.keys(games[gameId].players).length;
@@ -213,21 +214,57 @@ app.post("/api/games/:gameId/vote", (req: Request, res: Response) => {
 
     // Award points
     if (mostVotedPlayer === games[gameId].susPlayer) {
-      // Non-sus players win
-      Object.entries(games[gameId].players).forEach(([playerId, player]) => {
-        if (playerId !== games[gameId].susPlayer) {
-          games[gameId].players[playerId].score += 1;
-        }
-      });
+      games[gameId].gameState = "voting_phase_2";
     } else {
       // Sus player wins
       if (games[gameId].susPlayer) {
         games[gameId].players[games[gameId].susPlayer].score += 2;
       }
+      games[gameId].gameState = "review_results";
     }
-
-    games[gameId].gameState = "review_results";
   }
+
+  // Broadcast updated game state
+  if (gameConnections[gameId]) {
+    const message = JSON.stringify({
+      type: "game_state_update",
+      gameState: games[gameId].gameState,
+      players: games[gameId].players,
+      votes: games[gameId].votes,
+      susPlayer: games[gameId].susPlayer,
+    });
+    gameConnections[gameId].forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(message);
+      }
+    });
+  }
+
+  res.json({ success: true });
+});
+
+app.post("/api/games/:gameId/guess-word", (req: Request, res: Response) => {
+  const { gameId } = req.params;
+  const { playerId, word } = req.body;
+
+  if (!games[gameId]) {
+    res.status(404).json({ error: "Game not found" });
+    return;
+  }
+
+  if (playerId !== games[gameId].susPlayer) {
+    res.status(403).json({ error: "Only the sus player can guess" });
+    return;
+  }
+
+  // Check if the guessed word matches the secret word
+  if (word === games[gameId].secretWord) {
+    // Award point to sus player for correct guess
+    games[gameId].players[playerId].score += 1;
+  }
+
+  // Move to review results regardless of correct/incorrect guess
+  games[gameId].gameState = "review_results";
 
   // Broadcast updated game state
   if (gameConnections[gameId]) {

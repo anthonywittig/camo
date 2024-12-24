@@ -1,6 +1,6 @@
 import { WordsList } from "./WordsList";
 
-interface VotingStateProps {
+interface VotingPhase1StateProps {
   players: Record<string, { name: string; score: number }>;
   playerId: string;
   votes?: Record<string, string>;
@@ -8,13 +8,13 @@ interface VotingStateProps {
   words?: string[];
 }
 
-export function VotingState({
+export function VotingPhase1State({
   players,
   playerId,
   votes,
   handleVote,
   words,
-}: VotingStateProps) {
+}: VotingPhase1StateProps) {
   return (
     <div style={{ margin: "20px 0" }}>
       <h3>Players in game:</h3>

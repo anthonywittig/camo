@@ -2,8 +2,9 @@ import { useState, useEffect, useRef } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { WaitingState } from "./components/WaitingState";
 import { RoundStartedState } from "./components/RoundStartedState";
-import { VotingState } from "./components/VotingState";
+import { VotingPhase1State } from "./components/VotingPhase1State";
 import { ReviewResultsState } from "./components/ReviewResultsState";
+import { VotingPhase2State } from "./components/VotingPhase2State";
 
 interface ApiResponse {
   message: string;
@@ -15,7 +16,8 @@ interface Game {
     | "waiting"
     | "ready"
     | "round_started"
-    | "voting"
+    | "voting_phase_1"
+    | "voting_phase_2"
     | "review_results";
   words?: string[];
   secretWord?: string;
@@ -147,6 +149,19 @@ function App() {
     }).catch((error) => console.error("Error:", error));
   };
 
+  const handleWordGuess = (word: string) => {
+    fetch(`/api/games/${gameId}/guess-word`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        playerId,
+        word,
+      }),
+    }).catch((error) => console.error("Error:", error));
+  };
+
   if (isGameRoute) {
     return (
       <div className="App">
@@ -201,19 +216,28 @@ function App() {
             onTransitionToVoting={() =>
               setGame((prevGame) => ({
                 ...prevGame,
-                gameState: "voting",
+                gameState: "voting_phase_1",
               }))
             }
           />
         )}
 
-        {game.gameState === "voting" && (
-          <VotingState
+        {game.gameState === "voting_phase_1" && (
+          <VotingPhase1State
             players={game.players}
             playerId={playerId}
             votes={game.votes}
             handleVote={handleVote}
             words={game.words}
+          />
+        )}
+
+        {game.gameState === "voting_phase_2" && (
+          <VotingPhase2State
+            words={game.words}
+            playerId={playerId}
+            susPlayer={game.susPlayer}
+            handleWordGuess={handleWordGuess}
           />
         )}
 
