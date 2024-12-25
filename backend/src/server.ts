@@ -32,6 +32,15 @@ interface Game {
 
 const games: Record<string, Game> = {};
 
+interface WebSocketWithPlayerId extends WebSocket {
+  playerId?: string;
+  gameId?: string;
+  isAlive?: boolean;
+}
+
+const gameConnections: Record<string, WebSocketWithPlayerId[]> = {};
+const playerConnections: Record<string, WebSocketWithPlayerId> = {};
+
 dotenv.config();
 
 const app: Express = express();
@@ -44,27 +53,98 @@ app.use(express.static(path.join(__dirname, "../public")));
 // Add after your Express app initialization
 const wss = new WebSocketServer({ port: 5002 });
 
-// Store WebSocket connections by gameId
-const gameConnections: Record<string, WebSocket[]> = {};
+const PING_INTERVAL = 10000; // 10 seconds
 
-wss.on("connection", (ws: WebSocket) => {
-  let clientGameId: string;
+function heartbeat(this: WebSocketWithPlayerId) {
+  this.isAlive = true;
+}
+
+// Add ping/pong interval
+const interval = setInterval(() => {
+  wss.clients.forEach((ws: WebSocketWithPlayerId) => {
+    if (ws.isAlive === false) {
+      // Connection is dead, clean up
+      if (ws.gameId && ws.playerId) {
+        const game = games[ws.gameId];
+        if (game?.players[ws.playerId]) {
+          delete game.players[ws.playerId];
+
+          // Handle sus player disconnection
+          if (game.susPlayer === ws.playerId) {
+            game.gameState = "ready";
+            // Notify remaining players
+            gameConnections[ws.gameId]?.forEach((client) => {
+              if (client.readyState === WebSocket.OPEN) {
+                client.send(
+                  JSON.stringify({
+                    type: "game_state_update",
+                    gameState: game.gameState,
+                    players: game.players,
+                  })
+                );
+              }
+            });
+          }
+
+          // Notify others about player removal
+          gameConnections[ws.gameId]?.forEach((client) => {
+            if (client.readyState === WebSocket.OPEN) {
+              client.send(
+                JSON.stringify({
+                  type: "players_update",
+                  players: game.players,
+                })
+              );
+            }
+          });
+        }
+
+        // Clean up connections
+        if (gameConnections[ws.gameId]) {
+          gameConnections[ws.gameId] = gameConnections[ws.gameId].filter(
+            (conn) => conn !== ws
+          );
+        }
+        if (playerConnections[ws.playerId]) {
+          delete playerConnections[ws.playerId];
+        }
+      }
+      return ws.terminate();
+    }
+
+    ws.isAlive = false;
+    ws.ping();
+  });
+}, PING_INTERVAL);
+
+// Clean up interval on server shutdown
+wss.on("close", () => {
+  clearInterval(interval);
+});
+
+wss.on("connection", (ws: WebSocketWithPlayerId) => {
+  ws.isAlive = true;
+  ws.on("pong", heartbeat);
 
   ws.on("message", (message: string) => {
     const data = JSON.parse(message);
     if (data.type === "join") {
-      clientGameId = data.gameId;
-      if (!gameConnections[clientGameId]) {
-        gameConnections[clientGameId] = [];
+      const { gameId, playerId } = data;
+      ws.gameId = gameId;
+      ws.playerId = playerId;
+
+      if (!gameConnections[gameId]) {
+        gameConnections[gameId] = [];
       }
-      gameConnections[clientGameId].push(ws);
+      gameConnections[gameId].push(ws);
+      playerConnections[playerId] = ws;
 
       // Send current players list to the newly connected client
-      if (games[clientGameId]) {
+      if (games[gameId]) {
         ws.send(
           JSON.stringify({
             type: "players_update",
-            players: games[clientGameId].players,
+            players: games[gameId].players,
           })
         );
       }
@@ -72,10 +152,55 @@ wss.on("connection", (ws: WebSocket) => {
   });
 
   ws.on("close", () => {
-    if (clientGameId && gameConnections[clientGameId]) {
-      gameConnections[clientGameId] = gameConnections[clientGameId].filter(
-        (conn) => conn !== ws
-      );
+    if (ws.gameId && ws.playerId) {
+      const game = games[ws.gameId];
+      if (!game) return;
+
+      // Remove player from game's player list
+      if (game.players[ws.playerId]) {
+        delete game.players[ws.playerId];
+
+        // If this was the sus player, skip to next round
+        if (game.susPlayer === ws.playerId) {
+          game.gameState = "ready";
+          // Notify remaining players to start new round
+          if (gameConnections[ws.gameId]) {
+            const stateUpdate = JSON.stringify({
+              type: "game_state_update",
+              gameState: game.gameState,
+              players: game.players,
+            });
+            gameConnections[ws.gameId].forEach((client) => {
+              if (client.readyState === WebSocket.OPEN) {
+                client.send(stateUpdate);
+              }
+            });
+          }
+        }
+
+        // Notify other players about the player removal
+        if (gameConnections[ws.gameId]) {
+          const playerUpdate = JSON.stringify({
+            type: "players_update",
+            players: game.players,
+          });
+          gameConnections[ws.gameId].forEach((client) => {
+            if (client !== ws && client.readyState === WebSocket.OPEN) {
+              client.send(playerUpdate);
+            }
+          });
+        }
+      }
+
+      // Clean up connections
+      if (gameConnections[ws.gameId]) {
+        gameConnections[ws.gameId] = gameConnections[ws.gameId].filter(
+          (conn) => conn !== ws
+        );
+      }
+      if (playerConnections[ws.playerId]) {
+        delete playerConnections[ws.playerId];
+      }
     }
   });
 });

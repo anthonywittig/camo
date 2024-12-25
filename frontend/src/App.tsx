@@ -65,8 +65,8 @@ function App() {
       wsRef.current = ws;
 
       ws.onopen = () => {
-        // Join the specific game room
-        ws.send(JSON.stringify({ type: "join", gameId }));
+        // Include playerId when joining
+        ws.send(JSON.stringify({ type: "join", gameId, playerId }));
       };
 
       ws.onmessage = (event) => {
@@ -105,7 +105,7 @@ function App() {
         ws.close();
       };
     }
-  }, [gameId, isGameRoute]);
+  }, [gameId, isGameRoute, playerId]);
 
   useEffect(() => {
     if (isGameRoute && playerName) {
