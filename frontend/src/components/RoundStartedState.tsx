@@ -25,6 +25,9 @@ export function RoundStartedState({
   const [showSecretWord, setShowSecretWord] = useState(false);
 
   useEffect(() => {
+    setCountdown(20);
+    setShowSecretWord(false);
+
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev === null) return null;
@@ -42,7 +45,7 @@ export function RoundStartedState({
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [onTransitionToVoting]);
+  }, [onTransitionToVoting, words]);
 
   return (
     <>
