@@ -1,11 +1,8 @@
-import { QRCodeSVG } from "qrcode.react";
 import { PlayersList } from "./PlayersList";
 
 interface WaitingStateProps {
   playerName: string;
   setPlayerName: (name: string) => void;
-  showQR: boolean;
-  toggleQR: () => void;
   startGame: () => void;
   players: Record<string, { name: string; score: number }>;
 }
@@ -13,8 +10,6 @@ interface WaitingStateProps {
 export function WaitingState({
   playerName,
   setPlayerName,
-  showQR,
-  toggleQR,
   startGame,
   players,
 }: WaitingStateProps) {
@@ -28,9 +23,6 @@ export function WaitingState({
           marginBottom: "20px",
         }}
       >
-        <button onClick={toggleQR}>
-          {showQR ? "Hide QR Code" : "Show QR Code"}
-        </button>
         <button
           onClick={startGame}
           style={{
@@ -62,12 +54,6 @@ export function WaitingState({
       </div>
 
       <PlayersList players={players} />
-
-      {showQR && (
-        <div style={{ marginTop: "20px" }}>
-          <QRCodeSVG value={window.location.href} size={256} level="H" />
-        </div>
-      )}
     </>
   );
 }

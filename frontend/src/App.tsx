@@ -5,6 +5,7 @@ import { RoundStartedState } from "./components/RoundStartedState";
 import { VotingPhase1State } from "./components/VotingPhase1State";
 import { ReviewResultsState } from "./components/ReviewResultsState";
 import { VotingPhase2State } from "./components/VotingPhase2State";
+import { QRCodeSVG } from "qrcode.react";
 
 interface ApiResponse {
   message: string;
@@ -183,12 +184,23 @@ function App() {
         <div
           style={{
             display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
             gap: "10px",
-            justifyContent: "center",
             marginBottom: "20px",
           }}
         >
-          <button onClick={goBack}>Quit</button>
+          <div style={{ display: "flex", gap: "10px" }}>
+            <button onClick={goBack}>Quit</button>
+            <button onClick={toggleQR}>
+              {showQR ? "Hide QR Code" : "Show QR Code"}
+            </button>
+          </div>
+          {showQR && (
+            <div style={{ marginTop: "10px" }}>
+              <QRCodeSVG value={window.location.href} size={256} level="H" />
+            </div>
+          )}
         </div>
 
         {game.gameState === "waiting" && (
@@ -203,8 +215,6 @@ function App() {
             <WaitingState
               playerName={playerName}
               setPlayerName={setPlayerName}
-              showQR={showQR}
-              toggleQR={toggleQR}
               startGame={startGame}
               players={game.players}
             />
