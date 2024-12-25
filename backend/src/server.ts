@@ -332,15 +332,17 @@ app.post("/api/games/:gameId/vote", (req: Request, res: Response) => {
       voteCounts[votedId] = (voteCounts[votedId] || 0) + 1;
     });
 
-    // Find player with most votes
-    let maxVotes = 0;
-    let mostVotedPlayer = "";
-    Object.entries(voteCounts).forEach(([playerId, votes]) => {
-      if (votes > maxVotes) {
-        maxVotes = votes;
-        mostVotedPlayer = playerId;
-      }
-    });
+    // Find highest vote count
+    const maxVotes = Math.max(...Object.values(voteCounts));
+
+    // Check for ties by counting how many players have maxVotes
+    const playersWithMaxVotes = Object.entries(voteCounts).filter(
+      ([_, votes]) => votes === maxVotes
+    );
+
+    // Only set mostVotedPlayer if there's exactly one player with max votes
+    let mostVotedPlayer =
+      playersWithMaxVotes.length === 1 ? playersWithMaxVotes[0][0] : "";
 
     games[gameId].pointsGained = [];
 
