@@ -21,7 +21,7 @@ export function RoundStartedState({
   onTransitionToVoting,
   onSkipRound,
 }: RoundStartedStateProps) {
-  const [countdown, setCountdown] = useState<number | null>(5);
+  const [countdown, setCountdown] = useState<number | null>(20);
   const [showSecretWord, setShowSecretWord] = useState(false);
 
   useEffect(() => {
