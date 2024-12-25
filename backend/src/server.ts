@@ -354,10 +354,25 @@ app.post("/api/games/:gameId/vote", (req: Request, res: Response) => {
         if (!games[gameId].pointsGained) {
           games[gameId].pointsGained = [];
         }
+        // Award points to sus player
         games[gameId].players[games[gameId].susPlayer].score += 2;
         games[gameId].pointsGained.push({
           playerId: games[gameId].susPlayer,
           points: 2,
+        });
+
+        // Award points to players who voted for sus player
+        Object.entries(games[gameId].votes).forEach(([voterId, votedForId]) => {
+          if (votedForId === games[gameId].susPlayer) {
+            games[gameId].players[voterId].score += 1;
+            if (!games[gameId].pointsGained) {
+              games[gameId].pointsGained = [];
+            }
+            games[gameId].pointsGained.push({
+              playerId: voterId,
+              points: 1,
+            });
+          }
         });
       }
       games[gameId].gameState = "review_results";
