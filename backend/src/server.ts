@@ -3,16 +3,19 @@ import cors from "cors";
 import dotenv from "dotenv";
 import path from "path";
 import { WebSocket, WebSocketServer } from "ws";
-import { v4 as uuidv4 } from "uuid";
 import { topics } from "./topics";
 
 interface Player {
   name: string;
   score: number;
+  lastSkipTime?: number;
 }
 
 interface Game {
-  players: Record<string, { name: string; score: number }>;
+  players: Record<
+    string,
+    { name: string; score: number; lastSkipTime?: number }
+  >;
   gameState:
     | "waiting"
     | "ready"
@@ -256,9 +259,22 @@ app.post("/api/games/:gameId/start", (req: Request, res: Response) => {
 
 app.post("/api/games/:gameId/next-round", (req: Request, res: Response) => {
   const { gameId } = req.params;
+  const { playerId } = req.body;
+
   if (!games[gameId]) {
     res.status(404).json({ error: "Game not found" });
     return;
+  }
+
+  // Verify that the player exists in the game
+  if (!games[gameId].players[playerId]) {
+    res.status(403).json({ error: "Player not found in game" });
+    return;
+  }
+
+  // Track skip time if the game is already in round_started state
+  if (games[gameId].gameState === "round_started") {
+    games[gameId].players[playerId].lastSkipTime = Date.now();
   }
 
   games[gameId].votes = {};

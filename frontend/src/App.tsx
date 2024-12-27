@@ -149,6 +149,7 @@ function App() {
       headers: {
         "Content-Type": "application/json",
       },
+      body: JSON.stringify({ playerId }),
     }).catch((error) => console.error("Error:", error));
   };
 
