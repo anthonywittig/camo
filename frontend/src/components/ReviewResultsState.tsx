@@ -27,7 +27,8 @@ export function ReviewResultsState({
     <>
       <h3>Results:</h3>
       <p style={{ color: "#646cff" }}>
-        The sus player was: {players[susPlayer || ""].name}
+        The sus player was:{" "}
+        {players[susPlayer || ""]?.name || "(left the game)"}
       </p>
 
       <h4>Votes:</h4>
@@ -39,7 +40,8 @@ export function ReviewResultsState({
               color: votedForId === susPlayer ? "#646cff" : "inherit",
             }}
           >
-            {players[voterId].name} voted for {players[votedForId].name}
+            {players[voterId]?.name || "(left the game)"} voted for{" "}
+            {players[votedForId]?.name || "(left the game)"}
           </li>
         ))}
       </ul>
@@ -53,7 +55,7 @@ export function ReviewResultsState({
         <ul style={{ listStyle: "none", padding: 0 }}>
           {pointsGained.map(({ playerId, points }, index) => (
             <li key={index}>
-              {players[playerId].name}: +{points} points
+              {players[playerId]?.name || "(left the game)"}: +{points} points
             </li>
           ))}
         </ul>
