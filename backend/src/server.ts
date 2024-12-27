@@ -39,7 +39,6 @@ interface WebSocketWithPlayerId extends WebSocket {
 }
 
 const gameConnections: Record<string, WebSocketWithPlayerId[]> = {};
-const playerConnections: Record<string, WebSocketWithPlayerId> = {};
 
 dotenv.config();
 
@@ -105,9 +104,6 @@ const interval = setInterval(() => {
             (conn) => conn !== ws
           );
         }
-        if (playerConnections[ws.playerId]) {
-          delete playerConnections[ws.playerId];
-        }
       }
       return ws.terminate();
     }
@@ -137,7 +133,6 @@ wss.on("connection", (ws: WebSocketWithPlayerId) => {
         gameConnections[gameId] = [];
       }
       gameConnections[gameId].push(ws);
-      playerConnections[playerId] = ws;
 
       // Send current players list to the newly connected client
       if (games[gameId]) {
@@ -197,9 +192,6 @@ wss.on("connection", (ws: WebSocketWithPlayerId) => {
         gameConnections[ws.gameId] = gameConnections[ws.gameId].filter(
           (conn) => conn !== ws
         );
-      }
-      if (playerConnections[ws.playerId]) {
-        delete playerConnections[ws.playerId];
       }
     }
   });
