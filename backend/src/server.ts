@@ -272,6 +272,19 @@ app.post("/api/games/:gameId/next-round", (req: Request, res: Response) => {
     return;
   }
 
+  // Check if player's last skip was within 5 minutes
+  const lastSkipTime = games[gameId].players[playerId].lastSkipTime;
+  if (lastSkipTime) {
+    const fiveMinutesAgo = Date.now() - 5 * 60 * 1000; // 5 minutes in milliseconds
+    if (lastSkipTime > fiveMinutesAgo) {
+      res.status(429).json({
+        error: "Please wait before skipping again",
+        remainingTime: Math.ceil((lastSkipTime - fiveMinutesAgo) / 1000), // remaining seconds
+      });
+      return;
+    }
+  }
+
   // Track skip time if the game is already in round_started state
   if (games[gameId].gameState === "round_started") {
     games[gameId].players[playerId].lastSkipTime = Date.now();

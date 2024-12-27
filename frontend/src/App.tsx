@@ -74,22 +74,16 @@ function App() {
         try {
           const data = JSON.parse(event.data);
           if (data.type === "players_update") {
-            setGame((prevGame) => ({ ...prevGame, players: data.players }));
+            setGame((prevGame) => ({ ...prevGame, ...data }));
           } else if (data.type === "game_state_update") {
             setGame((prevGame) => ({
               ...prevGame,
-              gameState: data.gameState,
-              votes: data.votes,
-              players: data.players || prevGame.players,
-              pointsGained: data.pointsGained || prevGame.pointsGained,
+              ...data,
             }));
           } else if (data.type === "round_start") {
             setGame((prevGame) => ({
               ...prevGame,
-              gameState: data.gameState,
-              words: data.words,
-              secretWord: data.secretWord,
-              susPlayer: data.susPlayer,
+              ...data,
               votes: {}, // Reset votes at the start of a new round
             }));
           }

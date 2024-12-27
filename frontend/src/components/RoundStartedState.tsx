@@ -7,7 +7,10 @@ interface RoundStartedStateProps {
   susPlayer?: string;
   playerId: string;
   words?: string[];
-  players: Record<string, { name: string; score: number }>;
+  players: Record<
+    string,
+    { name: string; score: number; lastSkipTime?: number }
+  >;
   onTransitionToVoting: () => void;
   onSkipRound: () => void;
 }
@@ -23,6 +26,17 @@ export function RoundStartedState({
 }: RoundStartedStateProps) {
   const [countdown, setCountdown] = useState<number | null>(20);
   const [showSecretWord, setShowSecretWord] = useState(false);
+
+  const canSkip = () => {
+    console.log("canSkip", players[playerId]?.lastSkipTime);
+    const lastSkipTime = players[playerId]?.lastSkipTime;
+    if (!lastSkipTime) return true;
+
+    const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
+    console.log("fiveMinutesAgo", fiveMinutesAgo);
+    console.log("lastSkipTime", lastSkipTime);
+    return lastSkipTime <= fiveMinutesAgo;
+  };
 
   useEffect(() => {
     setCountdown(20);
@@ -63,7 +77,7 @@ export function RoundStartedState({
 
       {words && <WordsList words={words} />}
 
-      <button onClick={onSkipRound}>Skip Round</button>
+      {canSkip() && <button onClick={onSkipRound}>Skip Round</button>}
     </>
   );
 }
