@@ -33,7 +33,10 @@ interface Game {
 function App() {
   const [message, setMessage] = useState<string>("");
   const [showQR, setShowQR] = useState(false);
-  const [playerName, setPlayerName] = useState("");
+  const [playerName, setPlayerName] = useState(() => {
+    const gameId = window.location.pathname.slice(1);
+    return localStorage.getItem(`playerName_${gameId}`) || "";
+  });
   const [playerId] = useState(() => uuidv4());
   const [game, setGame] = useState<Game>({
     players: {},
@@ -173,6 +176,12 @@ function App() {
     }).catch((error) => console.error("Error:", error));
   };
 
+  const handleSetPlayerName = (name: string) => {
+    const gameId = window.location.pathname.slice(1);
+    localStorage.setItem(`playerName_${gameId}`, name);
+    setPlayerName(name);
+  };
+
   if (isGameRoute) {
     return (
       <div className="App">
@@ -209,7 +218,7 @@ function App() {
           >
             <WaitingState
               playerName={playerName}
-              setPlayerName={setPlayerName}
+              setPlayerName={handleSetPlayerName}
               startGame={startGame}
               players={game.players}
             />
