@@ -37,7 +37,14 @@ function App() {
     const gameId = window.location.pathname.slice(1);
     return localStorage.getItem(`playerName_${gameId}`) || "";
   });
-  const [playerId] = useState(() => uuidv4());
+  const [playerId] = useState(() => {
+    const gameId = window.location.pathname.slice(1);
+    const storedId = localStorage.getItem(`playerId_${gameId}`);
+    if (storedId) return storedId;
+    const newId = uuidv4();
+    localStorage.setItem(`playerId_${gameId}`, newId);
+    return newId;
+  });
   const [game, setGame] = useState<Game>({
     players: {},
     gameState: "waiting",
